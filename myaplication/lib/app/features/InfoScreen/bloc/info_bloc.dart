@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myaplication/di/di.dart';
 import 'package:myaplication/domain/domain.dart';
-import 'package:myaplication/domain/repository/top_news_info/CharacterRepository.dart';
 part "info_event.dart";
 part "info_state.dart";
 

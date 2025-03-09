@@ -8,7 +8,7 @@ class MyApk extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'DC superheroes',
+      title: 'DS heroes',
       theme: AppTheme.lightTheme,
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myaplication/app/app.dart';
+import 'package:myaplication/app/features/favourites/bloc/favourites_bloc.dart';
 import 'package:myaplication/di/di.dart';
 import 'package:myaplication/domain/domain.dart';
 //import 'package:news_brief/domain/repository/model%20info/article1.dart';
 import 'package:flutter/widgets.dart';
 //import 'package:go_router/go_router.dart';
 import 'package:myaplication/domain/repository/top_news_info/CharacterRepository.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
@@ -17,119 +21,188 @@ class InfoScreen extends StatefulWidget {
 
 class _InfoScreenState extends State<InfoScreen> {
   final _infoBloc = InfoBloc(getIt<CharacterRepository>());
+  final _favouritesBloc = getIt<FavouritesBloc>();
+
+  bool _isFavourite = false;
 
   @override
   void initState() {
-    _infoBloc.add(const InfoLoad());
+    _infoBloc.stream.listen((state) {
+      if (state is InfoLoadSuccess) {
+        _checkIfFavourite(state.articles.id);
+      }
+    });
     super.initState();
+    _infoBloc.add(const InfoLoad());
+  }
+
+  void _toggleFavourite(Article article) {
+    if (_isFavourite) {
+      _favouritesBloc.add(FavouritesDelete(article.name));
+    } else {
+      _favouritesBloc.add(FavouritesAdd(
+        id: article.id,
+        name: article.name,
+        description: article.description,
+        firstAppearance: article.firstAppearance,
+      ));
+    }
+    setState(() {
+      _isFavourite = !_isFavourite;
+    });
+  }
+
+  Future<void> _checkIfFavourite(int id) async {
+    final CollectionReference favorites =
+        FirebaseFirestore.instance.collection('favorites');
+
+    try {
+      QuerySnapshot snapshot = await favorites
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .collection('favourites')
+          .get();
+
+      bool isFavourite = snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList()
+          .any((favorite) => favorite['id'] == id);
+
+      setState(() {
+        _isFavourite = isFavourite;
+      });
+    } on FirebaseException catch (e) {
+      throw e.message.toString();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Info Page',
-          ),
-          backgroundColor: const Color.fromARGB(255, 8, 8, 66),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Details',
         ),
-        body: Container(
-          color: const Color.fromRGBO(227, 221, 225, 1),
-          child: BlocBuilder<InfoBloc, InfoState>(
+        actions: [
+          BlocBuilder<InfoBloc, InfoState>(
             bloc: _infoBloc,
             builder: (context, state) {
-              if (state is InfoLoadInProgress) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-              if (state is InfoLoadSuccess) {
-                Article articles = state.articles;
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Specifications',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      20.ph,
-                      // ListView.separated(
-                      //   primary: false,
-                      //   shrinkWrap: true,
-                      //   itemCount: articles.length,
-                      //   itemBuilder: (context, index) {
-                      //     //if (articles.length==articles[index]){
-                      //     return ArticleCardInfo(
-                      //       article: articles[index],
-                      //     );
-                      //     //}
-                      //   },
-                      //   separatorBuilder: (context, index) {
-                      //     return 20.ph;
-                      //   },
-                      // ),
-
-                      Text(
-                        'Name:',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      Text(
-                        articles.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        //style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      10.ph,
-                      Text(
-                        'Description:',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      Text(
-                        articles.description,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      10.ph,
-                      Text(
-                        'First appearance:',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      Text(
-                        articles.firstAppearance,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        //style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      10.ph,
-                      Text(
-                        'Creator:',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      10.ph,
-                      Text(
-                        articles.creator,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              if (state is InfoLoadFailure) {
-                return ErrorCard(
-                  title: 'Error',
-                  description: state.exception.toString(),
-                  onReload: () {
-                    _infoBloc.add(const InfoLoad());
-                  },
-                );
-              }
-              return const SizedBox();
+              return IconButton(
+                icon: Icon(
+                  _isFavourite ? Icons.favorite : Icons.favorite_border,
+                  color: _isFavourite ? Colors.red : null,
+                ),
+                onPressed: () {
+                  if (state is InfoLoadSuccess) {
+                    Article articles = state.articles;
+                    _toggleFavourite(articles);
+                  }
+                },
+              );
             },
           ),
-        ),
+        ],
+      ),
+      body: BlocBuilder<InfoBloc, InfoState>(
+        bloc: _infoBloc,
+        builder: (context, state) {
+          if (state is InfoLoadInProgress) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          if (state is InfoLoadSuccess) {
+            Article articles = state.articles;
+
+            //_isFavourite = _favouritesBloc.add(CheckFavoriteEvent(articles.id));
+            //_checkIfFavourite(articles.id);
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Name: ",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  //20.ph,
+                  Text(
+                    articles.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  10.ph,
+                  Text(
+                    "Description: ",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  Text(
+                    articles.description,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  10.ph,
+                  Text(
+                    "First apperiance: ",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  Text(
+                    articles.firstAppearance,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  10.ph,
+                  // Text("Creator: ",style: Theme.of(context).textTheme.titleLarge,),
+                  // Text(
+                  //   articles.creator,
+                  //   style: Theme.of(context).textTheme.bodyLarge,
+                  // ),
+                ],
+              ),
+            );
+          }
+          if (state is InfoLoadFailure) {
+            return ErrorCardInfo(
+              title: 'Error',
+              description: state.exception.toString(),
+              onReload: () {
+                _infoBloc.add(const InfoLoad());
+              },
+            );
+          }
+          return const SizedBox();
+        },
       ),
     );
+  }
+}
+
+class ErrorCardInfo extends StatelessWidget {
+  final String title;
+  final String description;
+  final VoidCallback onReload;
+
+  const ErrorCardInfo({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.onReload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        width: double.infinity,
+        child: Card(
+          child: Column(
+            children: [
+              Text(title),
+              Text(description),
+              ElevatedButton(
+                onPressed: onReload,
+                child: const Text('Reload'),
+              ),
+            ],
+          ),
+        ));
   }
 }

@@ -6,17 +6,11 @@ import 'package:myaplication/domain/domain.dart';
 class CharacterRepository extends CharacterRepositoryInterface {
   CharacterRepository({required this.dio});
   final Dio dio;
+  @override
   Future<Article> ChGetById() async {
     try {
       final Response response = await dio.get(
         Endpoints.getById,
-// queryParameters: {
-// 'pageNo': '1',
-// // 'make': 'Ducati',
-// // 'model': '',
-// // 'type': '',
-// // 'year': '',
-// },
       );
 
       List<String> parts = Endpoints.getById.split('/');

@@ -12,37 +12,45 @@ class ArticleCard extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        // для следующей лабораторной работы
-        Endpoints.getById =
-            Endpoints.getById.replaceAll('id', article.id.toString());
-        context.go('/home/article/1');
-      },
-      borderRadius: BorderRadius.circular(5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    //Image.asset('img2.png', width: 50,),
-                    Text(
-                      article.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    40.ph,
-                  ],
-                )
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+            color: const Color.fromARGB(255, 248, 205, 205), width: 1),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: InkWell(
+        onTap: () {
+          // для следующей лабораторной работы
+          Endpoints.getById =
+              Endpoints.getById.replaceAll('id', article.id.toString());
+          context.go('/home/article/${article.id.toString()}');
+        },
+        borderRadius: BorderRadius.circular(5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      //Image.asset('img2.png', width: 50,),
+                      Text(
+                        article.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      40.ph,
+                    ],
+                  )
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

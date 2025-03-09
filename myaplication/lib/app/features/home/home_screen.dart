@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myaplication/app/app.dart';
-//import 'package:news_brief/app/features/home/bloc/home_bloc.dart';
+import 'package:myaplication/app/features/auth/bloc/auth_bloc.dart';
+//import 'package:myaplication/app/features/home/bloc/home_bloc.dart';
 import 'package:myaplication/di/di.dart';
 import 'package:myaplication/domain/domain.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myaplication/domain/services/auth/auth_services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _homeBloc = HomeBloc(getIt<TopNewsRepository>());
+  final AuthBloc _authBloc = AuthBloc(getIt<AuthService>());
   @override
   void initState() {
     _homeBloc.add(const HomeLoad());
@@ -27,18 +31,62 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text(
             'Home Page',
           ),
-          backgroundColor: const Color.fromARGB(255, 8, 8, 66),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.favorite),
+              onPressed: () {
+                context.go('/home/favourites');
+              },
+              tooltip: 'Favourites',
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                _authBloc.add(LogOutRequested());
+              },
+              tooltip: 'LogOut',
+            ),
+          ],
         ),
-        body: Container(
-          color: const Color.fromRGBO(227, 221, 225, 1),
-          child: BlocBuilder<HomeBloc, HomeState>(
-            bloc: _homeBloc,
-            builder: (context, state) {
+
+        body: Container( 
+          color: Colors.lightBlue[50], 
+          child: BlocListener<AuthBloc, AuthState>(
+            bloc: _authBloc,
+            listener: (context, state) {
+              if (state is AuthSuccess) {
+                context.go('/auth');
+              }
+              if (state is AuthFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Exit error!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              if (state is AuthInProgress) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Bye Bye!'),
+                    backgroundColor: Color.fromARGB(255, 54, 222, 244),
+                  ),
+                );
+              }
+            },
+            child: BlocBuilder<HomeBloc, HomeState>(
+              bloc: _homeBloc,
+              builder: (context, state) {
               if (state is HomeLoadInProgress) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               }
+
+
+
+
+
 
               if (state is HomeLoadSuccess) {
                 List<Article> articles = state.articles;
@@ -48,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Marvel superheroes',
+                        'DC superheroes',
                         style: Theme.of(context).textTheme.headlineLarge,
                       ),
                       20.ph,
@@ -83,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

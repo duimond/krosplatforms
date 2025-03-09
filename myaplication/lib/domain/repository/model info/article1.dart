@@ -11,7 +11,7 @@ class Article1 {
     required this.creator,
   });
 
-  final String id;
+  final int id;
   final String name;
   final String description;
   final String firstAppearance;

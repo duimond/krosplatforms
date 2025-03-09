@@ -21,6 +21,9 @@ dependencies:
   talker: ^4.4.1
   talker_flutter: ^4.4.1
   talker_dio_logger: ^4.4.1
+  firebase_core: ^3.12.1
+  firebase_auth: ^5.5.1
+  cloud_firestore: ^5.6.5
 
 dev_dependencies:
   flutter_test:
